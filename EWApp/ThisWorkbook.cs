@@ -42,6 +42,7 @@ namespace EWApp
 
         private void ThisWorkbook_Shutdown(object sender, System.EventArgs e)
         {
+
         }
 
         #region VSTO Designer generated code

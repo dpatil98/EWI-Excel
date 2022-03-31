@@ -127,8 +127,9 @@ namespace EWApp
         public void ReadExcelAPI()
         {
 
-            
 
+            
+            
 
             //clearing columns ,rows and excelListObject for loading 2nd file
             dt.Columns.Clear();
@@ -200,7 +201,10 @@ namespace EWApp
                 }
                 ws.Columns[ind].Hidden = Convert.ToBoolean(col.Value["Hidden"]);
                 ind++;
-            }
+
+                    Globals.Ribbons.Ribbon1.SetSettingBtn(true);
+                    
+                }
             
             }catch (Exception ex)
             {
@@ -239,9 +243,10 @@ namespace EWApp
             //Task<HttpResponseMessage> taskResponse = client.SendAsync(message);
             HttpResponseMessage taskResponse = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleNewFile/", content);
             string result = taskResponse.Content.ReadAsStringAsync().Result.ToString();
-            MessageBox.Show(result);
+           
             if(result== "\"Success\"")
-            {
+            { 
+                MessageBox.Show("File Imported Successfully");
                 ReadExcelAPI();
             }
 
@@ -372,6 +377,7 @@ namespace EWApp
             this.Close();
             //ReadExcel(filePath,xmlfilePath,false);
 
+            
         }
 
 

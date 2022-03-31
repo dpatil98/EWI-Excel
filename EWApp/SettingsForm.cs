@@ -20,6 +20,7 @@ namespace EWApp
         public SettingsForm()
         {
             InitializeComponent();
+            
         }
 
         private void SettingsForm_Load(object sender, EventArgs e)
@@ -119,7 +120,7 @@ namespace EWApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Please Load a File First");
+               // MessageBox.Show("File Not Loaded");
                 this.Close();
             }
           

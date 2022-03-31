@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace EWApp
 {
@@ -10,7 +11,8 @@ namespace EWApp
     {
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
         {
-
+            //gets true after Laoding excel and xml file successfully in LoadXML function.
+            SetSettingBtn(false);
         }
 
         private void btn_Load_Click(object sender, RibbonControlEventArgs e)
@@ -25,10 +27,17 @@ namespace EWApp
 
         }*/
 
+        public void SetSettingBtn(bool isEnabled)
+        {
+            btn_Setting.Enabled = isEnabled;
+           // btn_Setting.Visible = isEnabled;
+        }
+
         private void btn_Setting_Click_1(object sender, RibbonControlEventArgs e)
         {
             SettingsForm s_form = new SettingsForm();
             s_form.ShowDialog(); 
+            
         }
 
         private void btn_Save_Click(object sender, RibbonControlEventArgs e)
