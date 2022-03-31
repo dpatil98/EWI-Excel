@@ -126,6 +126,10 @@ namespace EWApp
 
         public void ReadExcelAPI()
         {
+
+            
+
+
             //clearing columns ,rows and excelListObject for loading 2nd file
             dt.Columns.Clear();
             dt.Rows.Clear();
@@ -155,13 +159,20 @@ namespace EWApp
             //dataBinding
             exelListObject.SetDataBinding(dt);
             exelListObject.AutoSetDataBoundColumnHeaders = true;
-
+           // Excel.Worksheet ws = Globals.ThisWorkbook.Sheets.Add(Type.Missing, Globals.ThisWorkbook.Sheets[1], Type.Missing, Type.Missing);
             LoadXML();
+
+           /* ((Excel.DocEvents_Event)worksheet).Calculate +=
+            new Excel.DocEvents_CalculateEventHandler(worksheet_Calculate);*/
         }
 
 
         public void LoadXML()
         {
+            try
+            {
+
+            
             Task<string> response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}ReadXML?fileName={SelectedDropdown}");
 
             string JsonResponse = response.Result;
@@ -177,21 +188,24 @@ namespace EWApp
                 dt.Columns[ind-1].ReadOnly = Convert.ToBoolean(col.Value["ReadOnly"]);
                 if (Convert.ToBoolean(col.Value["ReadOnly"]))
                 {
+                   /* ws.Cells[1, ind].AllowEdit = false;*/
                     ws.Cells[1, ind].Interior.Color = Excel.XlRgbColor.rgbRed;
                     ws.Range[ws.Cells[2, ind], ws.Cells[TotalRows, ind]].Interior.Color = Excel.XlRgbColor.rgbGray; //ColorTranslator.FromHtml("#52b69a")
-                    //ws.Range[$"A1:A{TotalRows}"].Locked = true;
-                    ws.Range["A1:A3"].Style.Locked = true;
-
-
+                  
                 }
                 else
                 {
+                    ws.Range[ws.Cells[2, ind], ws.Cells[TotalRows, ind]].Interior.Color = Excel.XlRgbColor.rgbGhostWhite;
                     ws.Cells[1, ind].Interior.Color = Excel.XlRgbColor.rgbGreen;                   
                 }
                 ws.Columns[ind].Hidden = Convert.ToBoolean(col.Value["Hidden"]);
                 ind++;
             }
-
+            
+            }catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
 
         }
 

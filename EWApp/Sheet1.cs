@@ -32,11 +32,21 @@ namespace EWApp
         /// </summary>
         private void InternalStartup()
         {
-            this.Startup += new System.EventHandler(Sheet1_Startup);
-            this.Shutdown += new System.EventHandler(Sheet1_Shutdown);
+            this.BeforeDoubleClick += new Microsoft.Office.Interop.Excel.DocEvents_BeforeDoubleClickEventHandler(this.Sheet1_BeforeDoubleClick);
+            this.Startup += new System.EventHandler(this.Sheet1_Startup);
+            this.Shutdown += new System.EventHandler(this.Sheet1_Shutdown);
+
         }
 
         #endregion
 
+        private void Sheet1_BeforeDoubleClick(Excel.Range Target, ref bool Cancel)
+        {
+            
+            if (Target.Interior.Color == 8421504 || Target.Interior.Color == 255)
+            {
+                MessageBox.Show("This Column is marked as ReadOnly");
+            }
+        }
     }
 }
