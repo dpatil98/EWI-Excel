@@ -12,7 +12,15 @@ namespace EWApp
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
         {
             //gets true after Laoding excel and xml file successfully in LoadXML function.
-            SetSettingBtn(false);
+            if(form_LoadFile.SelectedDropdown != "")
+            {
+               SetRibbonBtns(true);
+            }
+            else
+            {
+               SetRibbonBtns(false);
+            }
+            
         }
 
         private void btn_Load_Click(object sender, RibbonControlEventArgs e)
@@ -27,9 +35,10 @@ namespace EWApp
 
         }*/
 
-        public void SetSettingBtn(bool isEnabled)
+        public void SetRibbonBtns(bool isEnabled)
         {
             btn_Setting.Enabled = isEnabled;
+            btn_Save.Enabled = isEnabled;
            // btn_Setting.Visible = isEnabled;
         }
 

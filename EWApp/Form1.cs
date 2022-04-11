@@ -8,10 +8,12 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using Excel = Microsoft.Office.Interop.Excel;
+
 
 namespace EWApp
 {
@@ -32,23 +34,47 @@ namespace EWApp
             InitializeComponent();
         }
 
+
+
+        private async void ErrorLogging(string errStr)
+        {
+            
+            HttpContent content = new StringContent(errStr, Encoding.UTF8, "application/json");
+            
+            HttpResponseMessage response = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleClientLogs", content);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(responseBody);
+            
+        }
+
         //after clicking load file button
         private void form_LoadFile_Load(object sender, EventArgs e)
         {
-            //calling GetAllFiles to get all the stored files
-            string[] allfiles = GetAllFiles();
-
-            //after getting names of the files adding them on dropdown menu
-            foreach (string file in allfiles)
+            try
             {
-                dropdown_fileSel.Items.Add(file);
-            }
-            dropdown_fileSel.Items.Add("* Import New File *");
+                //calling GetAllFiles to get all the stored files
+                string[] allfiles = GetAllFiles();
+                
 
+                //after getting names of the files adding them on dropdown menu
+                foreach (string file in allfiles)
+                {
+                    dropdown_fileSel.Items.Add(file);
+                }
+                dropdown_fileSel.Items.Add("* Import New File *");
+            }
+            catch (Exception ex)
+            {
+
+                MessageBox.Show(ex.Message);
+            }
         }
 
         public string[] GetAllFiles()
         {
+            try { 
+            
             //using API to get all files stroed 
             Task<string> response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}GetAllFiles/");
             string[] AllFiles = { };
@@ -60,111 +86,191 @@ namespace EWApp
             /*  MessageBox.Show(response.Result);
                 MessageBox.Show(AllFiles[0]);*/
             return AllFiles;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : When Loading Load Form Error: "+ex.Message));
+                return null;
+            }
         }
 
         //reads and display excel data send by API 
         public void OldReadExcelAPI()
         {
-
-            //sends req to service to get data from selected file
-            Task<string> response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}GetExcelData?fileName={SelectedDropdown}");
-
-            
-            string JsonResponse = response.Result;
-            var resultn = JsonConvert.DeserializeObject(JsonResponse).ToString();
-            //using internal class 'T' for structure 
-            //format : <"ExcelData",<"Row", RowData[] > >
-            var resultm = JsonConvert.DeserializeObject<T>(resultn);
-           
-            //clearing columns ,rows and excelListObject for loading 2nd file
-            dt.Columns.Clear();
-            dt.Rows.Clear();
-            if (exelListObject != null) { exelListObject.Delete(); }
-
-            //storing data from dictionary 
-            Dictionary<string, string[]> result = resultm.ExcelData;
-            //getting the count of rows to color the cells in LoadXML
-            TotalRows = result.Count;
-
-            //using forEach to iterate through excel data
-            //and storing row-wise into DataTable dt 
-            foreach (string row in result.Keys)
+            try
             {
-                if (row == "row1")
-                {
-                    /*DataColumn dc = new DataColumn();
-                    dc.ColumnName = result[row];
-                    dt.Columns.Add(dc);*/
+                //sends req to service to get data from selected file
+                Task<string> response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}GetExcelData?fileName={SelectedDropdown}");
 
-                    for (int i = 0; i < result[row].Length; i++)
+
+                string JsonResponse = response.Result;
+                var resultn = JsonConvert.DeserializeObject(JsonResponse).ToString();
+                //using internal class 'T' for structure 
+                //format : <"ExcelData",<"Row", RowData[] > >
+                var resultm = JsonConvert.DeserializeObject<T>(resultn);
+
+                //clearing columns ,rows and excelListObject for loading 2nd file
+                dt.Columns.Clear();
+                dt.Rows.Clear();
+                if (exelListObject != null) { exelListObject.Delete(); }
+
+                //storing data from dictionary 
+                Dictionary<string, string[]> result = resultm.ExcelData;
+                //getting the count of rows to color the cells in LoadXML
+                TotalRows = result.Count;
+
+                //using forEach to iterate through excel data
+                //and storing row-wise into DataTable dt 
+                foreach (string row in result.Keys)
+                {
+                    if (row == "row1")
                     {
-                        dt.Columns.Add(result[row][i]);                        
-                    }
-                }
-                else
-                {
-                    DataRow dr = dt.NewRow();
-                    dr.ItemArray = result[row];
-                    dt.Rows.Add(dr);
-                }
-                
-                // MessageBox.Show(result[row][0]);
-            }
+                        /*DataColumn dc = new DataColumn();
+                        dc.ColumnName = result[row];
+                        dt.Columns.Add(dc);*/
 
-            exelListObject = Globals.Sheet1.Controls.AddListObject(Globals.Sheet1.Range["A1"], SelectedDropdown);
-            /*
-            string[] columnNames = (from DataColumn x in dt.Columns
-                                  select x.ColumnName
-                                            ).ToArray();*/
-            //dataBinding
-            exelListObject.SetDataBinding(dt);
-            exelListObject.AutoSetDataBoundColumnHeaders = true;
-            
-            LoadXML();
+                        for (int i = 0; i < result[row].Length; i++)
+                        {
+                            dt.Columns.Add(result[row][i]);
+                        }
+                    }
+                    else
+                    {
+                        DataRow dr = dt.NewRow();
+                        dr.ItemArray = result[row];
+                        dt.Rows.Add(dr);
+                    }
+
+                    // MessageBox.Show(result[row][0]);
+                }
+
+                exelListObject = Globals.Sheet1.Controls.AddListObject(Globals.Sheet1.Range["A1"], SelectedDropdown);
+                /*
+                string[] columnNames = (from DataColumn x in dt.Columns
+                                      select x.ColumnName
+                                                ).ToArray();*/
+                //dataBinding
+                exelListObject.SetDataBinding(dt);
+                exelListObject.AutoSetDataBoundColumnHeaders = true;
+
+                LoadXML();
+            }
+            catch (Exception ex)
+            {
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : When Reading And Assigning ExcelData Method:Old-Rowwise Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
         }
 
 
         public void ReadExcelAPI()
         {
-
-
-            
-            
-
-            //clearing columns ,rows and excelListObject for loading 2nd file
-            dt.Columns.Clear();
-            dt.Rows.Clear();
-
-            //sends req to service to get data from selected file
-            var response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}NewGetExcelData?fileName={SelectedDropdown}");
-
-            string JsonResponse = response.Result;
-            var result = JsonConvert.DeserializeObject(JsonResponse).ToString();
-            dt = (DataTable)JsonConvert.DeserializeObject(result, (typeof(DataTable)));
-
-            // DataRow dr = dt.Rows[0];
-            int ind = 0;
-            foreach(DataColumn col in dt.Columns)
+        try
             {
-                col.ColumnName = dt.Rows[0].ItemArray[ind].ToString();
-                ind++;
+
+                //clearing columns ,rows and excelListObject for loading 2nd file
+                dt.Columns.Clear();
+                dt.Rows.Clear();
+
+                //sends req to service to get data from selected file
+                var response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}NewGetExcelData?fileName={SelectedDropdown}");
+
+                string JsonResponse = response.Result;
+                var result = JsonConvert.DeserializeObject(JsonResponse).ToString();
+                dt = (DataTable)JsonConvert.DeserializeObject(result, (typeof(DataTable)));
+
+                // DataRow dr = dt.Rows[0];
+                int ind = 0;
+                foreach(DataColumn col in dt.Columns)
+                {
+                    col.ColumnName = dt.Rows[0].ItemArray[ind].ToString();
+                    ind++;
+                }
+                dt.Rows[0].Delete();
+                //getting TotalRows for LoadXML file
+                TotalRows = dt.Rows.Count+1;
+
+                if (exelListObject != null) { exelListObject.Delete(); }
+
+
+                exelListObject = Globals.Sheet1.Controls.AddListObject(Globals.Sheet1.Range["A1"], SelectedDropdown);
+                //dataBinding
+                exelListObject.SetDataBinding(dt);
+                exelListObject.AutoSetDataBoundColumnHeaders = true;
+               // Excel.Worksheet ws = Globals.ThisWorkbook.Sheets.Add(Type.Missing, Globals.ThisWorkbook.Sheets[1], Type.Missing, Type.Missing);
+                LoadXML();
+
+                    /* ((Excel.DocEvents_Event)worksheet).Calculate +=
+                     new Excel.DocEvents_CalculateEventHandler(worksheet_Calculate);*/
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : When Getting And Assigning ExcelData Method:New DatatableAssigning Error: " + ex.Message));
+                    MessageBox.Show(ex.Message);
+                }
+        }
+
+        public void MultiReadExcelAPI()
+        {
+            try
+            {
+
+                //clearing columns ,rows and excelListObject for loading 2nd file
+                dt.Columns.Clear();
+                dt.Rows.Clear();
+
+                //sends req to service to get data from selected file
+                var response = client.GetStringAsync($"{ConfigurationManager.AppSettings["APIUrl"]}NewGetExcelData?fileName={SelectedDropdown}");
+
+                string JsonResponse = response.Result;
+                var result = JsonConvert.DeserializeObject(JsonResponse).ToString();
+                var listOfWorksheets = (List<DataTable>)JsonConvert.DeserializeObject(result,typeof(List<DataTable>));
+                if (exelListObject != null) { exelListObject.Delete(); }
+
+                int sheetNo = 1;
+                foreach(DataTable Sheet in listOfWorksheets)
+                {
+                    // if (exelListObject != null) { exelListObject.Delete(); }
+                    //Globals.ThisWorkbook.Worksheets.Add(Type.Missing, Globals.ThisWorkbook.Sheets[sheetNo], Type.Missing, Type.Missing);
+                    if (sheetNo > 1) { Globals.ThisWorkbook.Sheets.Add(After: Globals.ThisWorkbook.Sheets[Globals.ThisWorkbook.Sheets.Count]); }
+                    //int q = Globals.ThisWorkbook.Worksheets.Count;
+                    //Task.Delay(2000).Wait();
+
+                    
+                    Worksheet  NewXlWs  = Globals.Factory.GetVstoObject(Globals.ThisWorkbook.Application.ActiveSheet);
+                    //Worksheet NewXlWs = Globals.Factory.GetVstoObject(Globals.Sheet1.Next);
+
+                    int ind = 0;
+                   
+                   foreach (DataColumn col in Sheet.Columns)
+                   {
+                       col.ColumnName = Sheet.Rows[0].ItemArray[ind].ToString();
+                       Sheet.Rows[0].Delete();
+                       ind++;
+                   }
+
+                    
+                   exelListObject = NewXlWs.Controls.AddListObject(NewXlWs.Range["A1"], SelectedDropdown + sheetNo);
+                   //exelListObject = Globals.Sheet1.Controls.AddListObject(Globals.Sheet1.Range["A1"], SelectedDropdown+sheetNo);
+                   exelListObject.SetDataBinding(Sheet);
+                   exelListObject.AutoSetDataBoundColumnHeaders = true;
+                   sheetNo++;
+                }
+                // DataRow dr = dt.Rows[0];
+    
+                //getting TotalRows for LoadXML file
+                TotalRows = listOfWorksheets[0].Rows.Count+1;
+                // Excel.Worksheet ws = Globals.ThisWorkbook.Sheets.Add(Type.Missing, Globals.ThisWorkbook.Sheets[1], Type.Missing, Type.Missing);
+              // LoadXML();
+
+                
             }
-            dt.Rows[0].Delete();
-            //getting TotalRows for LoadXML file
-            TotalRows = dt.Rows.Count+1;
-
-            if (exelListObject != null) { exelListObject.Delete(); }
-
-
-            exelListObject = Globals.Sheet1.Controls.AddListObject(Globals.Sheet1.Range["A1"], SelectedDropdown);
-            //dataBinding
-            exelListObject.SetDataBinding(dt);
-            exelListObject.AutoSetDataBoundColumnHeaders = true;
-           // Excel.Worksheet ws = Globals.ThisWorkbook.Sheets.Add(Type.Missing, Globals.ThisWorkbook.Sheets[1], Type.Missing, Type.Missing);
-            LoadXML();
-
-           /* ((Excel.DocEvents_Event)worksheet).Calculate +=
-            new Excel.DocEvents_CalculateEventHandler(worksheet_Calculate);*/
+            catch (Exception ex)
+            {
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now,$"Client-Side : Getting And Assgining MultiSheet ExcelData , Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
         }
 
 
@@ -202,12 +308,13 @@ namespace EWApp
                 ws.Columns[ind].Hidden = Convert.ToBoolean(col.Value["Hidden"]);
                 ind++;
 
-                    Globals.Ribbons.Ribbon1.SetSettingBtn(true);
+                
                     
                 }
-            
+            Globals.Ribbons.Ribbon1.SetRibbonBtns(true);
             }catch (Exception ex)
             {
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Loading XMlSetting And Appllying to Columns FileName:{SelectedDropdown} ,  Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
 
@@ -215,158 +322,186 @@ namespace EWApp
 
         public async void  ImportNewFile(string filePath)
         {
-            var message = new HttpRequestMessage();
-            var content = new MultipartFormDataContent();
-            var filestream = new FileStream(filePath, FileMode.Open);
-            //var stream = new StreamContent(File.Open(filePath, FileMode.Open));
-            var fileName = System.IO.Path.GetFileName(filePath);
-            content.Add(new StreamContent(filestream), "file", fileName);
-           /* SampleClass sampleClass = new SampleClass();
-            JsonMediaTypeFormatter formatter = new JsonMediaTypeFormatter
+            try
             {
-                SerializerSettings = { TypeNameHandling = TypeNameHandling.Auto }
-            };*/
-            //content.Add(new ObjectContent(typeof(SampleClass), sampleClass, formatter), "SampleClass");
-            //content.Add(stream,fileName);
 
-
-            message.Method = HttpMethod.Post;
-            message.Content = content;
             
-            client.DefaultRequestHeaders.Accept.Clear();
-            /*formatter = new JsonMediaTypeFormatter
-            {
-                SerializerSettings = { TypeNameHandling = TypeNameHandling.Auto }
-            };*/
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(@"application/x-www-form-urlencoded"));
+                var message = new HttpRequestMessage();
+                var content = new MultipartFormDataContent();
+                var filestream = new FileStream(filePath, FileMode.Open);
+                //var stream = new StreamContent(File.Open(filePath, FileMode.Open));
+                var fileName = System.IO.Path.GetFileName(filePath);
+                content.Add(new StreamContent(filestream), "file", fileName);
+               /* SampleClass sampleClass = new SampleClass();
+                JsonMediaTypeFormatter formatter = new JsonMediaTypeFormatter
+                {
+                    SerializerSettings = { TypeNameHandling = TypeNameHandling.Auto }
+                };*/
+                //content.Add(new ObjectContent(typeof(SampleClass), sampleClass, formatter), "SampleClass");
+                //content.Add(stream,fileName);
 
-            //Task<HttpResponseMessage> taskResponse = client.SendAsync(message);
-            HttpResponseMessage taskResponse = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleNewFile/", content);
-            string result = taskResponse.Content.ReadAsStringAsync().Result.ToString();
+
+                message.Method = HttpMethod.Post;
+                message.Content = content;
+            
+                client.DefaultRequestHeaders.Accept.Clear();
+                /*formatter = new JsonMediaTypeFormatter
+                {
+                    SerializerSettings = { TypeNameHandling = TypeNameHandling.Auto }
+                };*/
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(@"application/x-www-form-urlencoded"));
+
+                //Task<HttpResponseMessage> taskResponse = client.SendAsync(message);
+                HttpResponseMessage taskResponse = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleNewFile/", content);
+                string result = taskResponse.Content.ReadAsStringAsync().Result.ToString();
            
-            if(result== "\"Success\"")
-            { 
-                MessageBox.Show("File Imported Successfully");
-                ReadExcelAPI();
+                if(result== "\"Success\"")
+                {
+                   
+                    MessageBox.Show("File Imported Successfully");
+                    ReadExcelAPI();
+                }
             }
-
+            catch (Exception ex)
+            {
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Importing New File Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
         }
 
         public async void Save()
         {
-            Excel._Worksheet xlWorksheet = Globals.ThisWorkbook.Worksheets[1];
-            Excel.Range xlRange = xlWorksheet.UsedRange;
-            // string filePath = "D:\\EW-WEB\\EWApp\\EWAppWorkbook.xlsx";
-            List<string> list = new List<string>();
-            string[] fileName = { SelectedDropdown };
+            try 
+            { 
+
+                Excel._Worksheet xlWorksheet = Globals.ThisWorkbook.Worksheets[1];
+                Excel.Range xlRange = xlWorksheet.UsedRange;
+                // string filePath = "D:\\EW-WEB\\EWApp\\EWAppWorkbook.xlsx";
+                List<string> list = new List<string>();
+                string[] fileName = { SelectedDropdown };
             
-            Dictionary<string, string[]> ExcelData = new Dictionary<string, string[]>();
-           // Dictionary<string, Dictionary<string, string[]>> ExcelDataAsjson = new Dictionary<string, Dictionary<string, string[]>>();
+                Dictionary<string, string[]> ExcelData = new Dictionary<string, string[]>();
+               // Dictionary<string, Dictionary<string, string[]>> ExcelDataAsjson = new Dictionary<string, Dictionary<string, string[]>>();
 
-            int row = 1;
-            int col = 1;
-            ExcelData.Add("FileName",fileName);
-            //while loops to grab value from imported workbook
-            //1st loop will loop till the last row
-            //2nd loop will loop till the last columns
+                int row = 1;
+                int col = 1;
+                ExcelData.Add("FileName",fileName);
+                //while loops to grab value from imported workbook
+                //1st loop will loop till the last row
+                //2nd loop will loop till the last columns
 
-            while (xlRange.Cells[row, col] != null && xlRange.Cells[row, col].Value2 != null)
-            {
-                //creating new row to assgning data to it.
-                //DataRow dr = dt.NewRow();
                 while (xlRange.Cells[row, col] != null && xlRange.Cells[row, col].Value2 != null)
                 {
-                    list.Add(xlRange.Cells[row, col].Value.ToString());
-                    col++;
+                    //creating new row to assgning data to it.
+                    //DataRow dr = dt.NewRow();
+                    while (xlRange.Cells[row, col] != null && xlRange.Cells[row, col].Value2 != null)
+                    {
+                        list.Add(xlRange.Cells[row, col].Value.ToString());
+                        col++;
+                    }
+
+                    ExcelData.Add($"row{row}", list.ToArray());
+                    //clearing list so next row could have its own unique data
+                    list.Clear();
+                    col = 1;
+                    row++;
                 }
 
-                ExcelData.Add($"row{row}", list.ToArray());
-                //clearing list so next row could have its own unique data
-                list.Clear();
-                col = 1;
-                row++;
-            }
-
            
-            //ExcelDataAsjson.Add("ExcelData", ExcelData);
+                //ExcelDataAsjson.Add("ExcelData", ExcelData);
            
 
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create($"{ConfigurationManager.AppSettings["APIUrl"]}HandleSaveFile");
-            httpWebRequest.ContentType = "application/json";
-            httpWebRequest.Method = "POST";
+                var httpWebRequest = (HttpWebRequest)WebRequest.Create($"{ConfigurationManager.AppSettings["APIUrl"]}HandleSaveFile");
+                httpWebRequest.ContentType = "application/json";
+                httpWebRequest.Method = "POST";
 
-            using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                {
+                    string json = JsonConvert.SerializeObject(ExcelData);
+
+                    streamWriter.Write(json);
+                }
+
+                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    var result = streamReader.ReadToEnd();
+                    MessageBox.Show(result);
+                }
+
+                 // var data = new StringContent(json, Encoding.UTF8, "application/json");
+
+
+                 /* var url = "http://localhost:8080/ExcelHandler/HandleSaveFile";
+
+                  HttpResponseMessage response = await client.PostAsync(url, data);
+
+                  string result = response.Content.ReadAsStringAsync().Result;
+                  MessageBox.Show(result);*/
+            }
+            catch (Exception ex)
             {
-                string json = JsonConvert.SerializeObject(ExcelData);
-
-                streamWriter.Write(json);
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Saving Excel Data Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
             }
-
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                var result = streamReader.ReadToEnd();
-                MessageBox.Show(result);
-            }
-
-
-
-                // var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-
-                /* var url = "http://localhost:8080/ExcelHandler/HandleSaveFile";
-
-                 HttpResponseMessage response = await client.PostAsync(url, data);
-
-                 string result = response.Content.ReadAsStringAsync().Result;
-                 MessageBox.Show(result);*/
-            }
+        }
 
 
         private  void  dropdown_fileSel_SelectedIndexChanged(object sender, EventArgs e)
         {
-            
-
-            if (dropdown_fileSel.SelectedItem.ToString() == "* Import New File *")
+            try
             {
-                // MessageBox.Show("Imprting New File");
-                var fileContent = string.Empty;
-                var filePath = string.Empty;
 
-                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            
+                if (dropdown_fileSel.SelectedItem.ToString() == "* Import New File *")
                 {
-                    openFileDialog.InitialDirectory = "c:\\";
-                    /*openFileDialog.Filter = "Excel file (*.xlsx)|*.xlsx|All files (*.*)|*.*";*/
-                    openFileDialog.Filter = "Excel file (*.xlsx)|*.xlsx";
-                    openFileDialog.FilterIndex = 1;
-                    openFileDialog.RestoreDirectory = true;
+                    // MessageBox.Show("Imprting New File");
+                    var fileContent = string.Empty;
+                    var filePath = string.Empty;
 
-                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    using (OpenFileDialog openFileDialog = new OpenFileDialog())
                     {
-                        //Get the path of specified file
-                        filePath = openFileDialog.FileName;
-                        SelectedDropdown = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                        openFileDialog.InitialDirectory = "c:\\";
+                        /*openFileDialog.Filter = "Excel file (*.xlsx)|*.xlsx|All files (*.*)|*.*";*/
+                        openFileDialog.Filter = "Excel file (*.xlsx)|*.xlsx";
+                        openFileDialog.FilterIndex = 1;
+                        openFileDialog.RestoreDirectory = true;
+
+                        if (openFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            //Get the path of specified file
+                            filePath = openFileDialog.FileName;
+                            SelectedDropdown = System.IO.Path.GetFileNameWithoutExtension(filePath);
                         
-                        ImportNewFile(filePath);
-                        this.Close();
-                        //for new file we are sending 'true' as 2nd parameter.
-                        // ReadExcel(filePath,String.Empty,true);
+                            ImportNewFile(filePath);
+                            this.Close();
+                            //for new file we are sending 'true' as 2nd parameter.
+                            // ReadExcel(filePath,String.Empty,true);
 
 
+                        }
                     }
                 }
+                else
+                {
+                    SelectedDropdown = dropdown_fileSel.SelectedItem.ToString();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                SelectedDropdown = dropdown_fileSel.SelectedItem.ToString();
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Selecting File from Dropdown " + ex.Message));
+                MessageBox.Show(ex.Message);
             }
-
         }
 
 
         //after clicking on import button
         private void btn_Import_Click(object sender, EventArgs e)
         {
+            try
+            {
+
+            
             //MessageBox.Show("Importing File : " + SelectedDropdown);
 
             //string filePath = "C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\"+ SelectedDropdown +"\\"+ SelectedDropdown+".xlsx";
@@ -375,18 +510,18 @@ namespace EWApp
 
             ReadExcelAPI();
             this.Close();
-            //ReadExcel(filePath,xmlfilePath,false);
+                //ReadExcel(filePath,xmlfilePath,false);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Clicked On Import Button Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
 
-            
         }
 
 
         
-
-
-
-
-
 
        /* private void ReadExcel(string filePath, string xmlfilePath, Boolean isNew)
         {

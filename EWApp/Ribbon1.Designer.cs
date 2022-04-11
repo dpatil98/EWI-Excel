@@ -37,9 +37,9 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Ribbon1));
             this.tab1 = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
-            this.group2 = this.Factory.CreateRibbonGroup();
             this.btn_Load = this.Factory.CreateRibbonButton();
             this.btn_Save = this.Factory.CreateRibbonButton();
+            this.group2 = this.Factory.CreateRibbonGroup();
             this.btn_Setting = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
@@ -60,12 +60,6 @@
             this.group1.Label = "Functions";
             this.group1.Name = "group1";
             // 
-            // group2
-            // 
-            this.group2.Items.Add(this.btn_Setting);
-            this.group2.Label = "group2";
-            this.group2.Name = "group2";
-            // 
             // btn_Load
             // 
             this.btn_Load.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge;
@@ -83,6 +77,12 @@
             this.btn_Save.Name = "btn_Save";
             this.btn_Save.ShowImage = true;
             this.btn_Save.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.btn_Save_Click);
+            // 
+            // group2
+            // 
+            this.group2.Items.Add(this.btn_Setting);
+            this.group2.Label = "group2";
+            this.group2.Name = "group2";
             // 
             // btn_Setting
             // 

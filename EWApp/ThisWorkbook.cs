@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Configuration;
 using System.Net;
 using System.Net.Http;
@@ -12,6 +13,10 @@ namespace EWApp
     {
         private void ThisWorkbook_Startup(object sender, System.EventArgs e)
         {
+            try
+            {
+
+            
             // var remoteIpAddress = HttpContext.GetFeature<IHttpConnectionFeature>()?.RemoteIpAddress;
             HttpClient client = new HttpClient();
             string MyIp=string.Empty;
@@ -31,13 +36,19 @@ namespace EWApp
             
             form_LoadFile.SelectedDropdown = JsonConvert.DeserializeObject(response.Result).ToString();
             if(form_LoadFile.SelectedDropdown != "")
-            {
+            { 
+                Globals.Ribbons.Ribbon1.SetRibbonBtns(true);
                 form_LoadFile webOpen = new form_LoadFile();
                 webOpen.ReadExcelAPI();
-            }
-            
-            // throw new Exception("No network adapters with an IPv4 address in the system!");
+               
+                }
 
+                // throw new Exception("No network adapters with an IPv4 address in the system!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void ThisWorkbook_Shutdown(object sender, System.EventArgs e)
