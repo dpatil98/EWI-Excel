@@ -17,6 +17,8 @@ namespace EWApp
         static HttpClient client = new HttpClient();
         public List<string> colNames = new List<string>();
         XElement xelement;
+        form_LoadFile ErrorLog = new form_LoadFile();
+
         public SettingsForm()
         {
             InitializeComponent();
@@ -35,6 +37,10 @@ namespace EWApp
 
         private async void UpdateXML()
         {
+            try
+            {
+
+            
             List<object> list = new List<Object>();
             int ind = 0;
             list.Add(Selectedfile);
@@ -67,12 +73,19 @@ namespace EWApp
                 loadform.LoadXML();
             }
             
-
+            }catch (Exception ex)
+            {
+                ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Updating XML Data Form:Setting , Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void btn_Save_Click(object sender, EventArgs e)
         {
+            try
+            {
 
+            
             UpdateXML();
 
             /*IEnumerable<XElement> settingGroup = xelement.Elements();
@@ -85,7 +98,13 @@ namespace EWApp
             }
            
             xelement.Save("C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\" + Selectedfile + "\\" + Selectedfile + "_setting.xml");*/
-           this.Visible = false;
+            this.Visible = false;
+
+            }catch (Exception ex)
+            {
+                ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Clicked On Save button Form:Setting , Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void checkedList_readOnly_SelectedIndexChanged(object sender, EventArgs e)
@@ -120,7 +139,8 @@ namespace EWApp
             }
             catch (Exception ex)
             {
-               // MessageBox.Show("File Not Loaded");
+                ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Reading XML Data,  Form:Setting , Error: " + ex.Message));
+                MessageBox.Show(ex.Message);
                 this.Close();
             }
           

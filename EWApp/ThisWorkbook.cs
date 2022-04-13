@@ -47,6 +47,8 @@ namespace EWApp
             }
             catch (Exception ex)
             {
+                form_LoadFile webOpen = new form_LoadFile();
+                webOpen.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Starting Workbook Not able to connect to service  , Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
         }

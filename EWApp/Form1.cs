@@ -36,7 +36,7 @@ namespace EWApp
 
 
 
-        private async void ErrorLogging(string errStr)
+        public async void ErrorLogging(string errStr)
         {
             
             HttpContent content = new StringContent(errStr, Encoding.UTF8, "application/json");
