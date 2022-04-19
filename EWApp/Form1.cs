@@ -27,6 +27,8 @@ namespace EWApp
         static private DataTable dt = new DataTable();
         static XElement xelement;
         static HttpClient client = new HttpClient();
+        //LogView to Add Log into LogActionPane
+        LogViewControl LogView = ThisWorkbook.logView;
 
 
         public form_LoadFile()
@@ -38,14 +40,22 @@ namespace EWApp
 
         public async void ErrorLogging(string errStr)
         {
-            
-            HttpContent content = new StringContent(errStr, Encoding.UTF8, "application/json");
-            
-            HttpResponseMessage response = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleClientLogs", content);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(responseBody);
-            
+            try
+            {
+
+
+                HttpContent content = new StringContent(errStr, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await client.PostAsync($"{ConfigurationManager.AppSettings["APIUrl"]}HandleClientLogs", content);
+                response.EnsureSuccessStatusCode();
+                string responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(responseBody);
+            }
+            catch (Exception ex)
+            {
+                LogView.PrintErrorLog("Error Occure While Logging");
+                MessageBox.Show("Network Connection Error");
+            }
         }
 
         //after clicking load file button
@@ -63,10 +73,11 @@ namespace EWApp
                     dropdown_fileSel.Items.Add(file);
                 }
                 dropdown_fileSel.Items.Add("* Import New File *");
+               
             }
             catch (Exception ex)
             {
-
+                LogView.PrintErrorLog(ex.Message);
                 MessageBox.Show(ex.Message);
             }
         }
@@ -155,9 +166,11 @@ namespace EWApp
                 exelListObject.AutoSetDataBoundColumnHeaders = true;
 
                 LoadXML();
+                LogView.PrintActionLog("File Loaded Successfully: " + SelectedDropdown);
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : When Reading And Assigning ExcelData Method:Old-Rowwise Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -168,7 +181,7 @@ namespace EWApp
         {
         try
             {
-
+                LogView.PrintActionLog("Loading File : " + SelectedDropdown);
                 //clearing columns ,rows and excelListObject for loading 2nd file
                 dt.Columns.Clear();
                 dt.Rows.Clear();
@@ -203,9 +216,11 @@ namespace EWApp
 
                     /* ((Excel.DocEvents_Event)worksheet).Calculate +=
                      new Excel.DocEvents_CalculateEventHandler(worksheet_Calculate);*/
+                    LogView.PrintActionLog("File Loaded Successfully: " + SelectedDropdown);
                 }
                 catch (Exception ex)
                 {
+                    LogView.PrintErrorLog(ex.Message);
                     ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : When Getting And Assigning ExcelData Method:New DatatableAssigning Error: " + ex.Message));
                     MessageBox.Show(ex.Message);
                 }
@@ -268,6 +283,7 @@ namespace EWApp
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now,$"Client-Side : Getting And Assgining MultiSheet ExcelData , Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -314,6 +330,7 @@ namespace EWApp
             Globals.Ribbons.Ribbon1.SetRibbonBtns(true);
             }catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Loading XMlSetting And Appllying to Columns FileName:{SelectedDropdown} ,  Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -324,8 +341,8 @@ namespace EWApp
         {
             try
             {
+                LogView.PrintActionLog("Importing New File" );
 
-            
                 var message = new HttpRequestMessage();
                 var content = new MultipartFormDataContent();
                 var filestream = new FileStream(filePath, FileMode.Open);
@@ -357,13 +374,14 @@ namespace EWApp
            
                 if(result== "\"Success\"")
                 {
-                   
+                    LogView.PrintActionLog("File Imported Successfully: " + SelectedDropdown);
                     MessageBox.Show("File Imported Successfully");
                     ReadExcelAPI();
                 }
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Importing New File Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -372,8 +390,8 @@ namespace EWApp
         public async void Save()
         {
             try 
-            { 
-
+            {
+                LogView.PrintActionLog("Saving... " + SelectedDropdown);
                 Excel._Worksheet xlWorksheet = Globals.ThisWorkbook.Worksheets[1];
                 Excel.Range xlRange = xlWorksheet.UsedRange;
                 // string filePath = "D:\\EW-WEB\\EWApp\\EWAppWorkbook.xlsx";
@@ -429,18 +447,20 @@ namespace EWApp
                     MessageBox.Show(result);
                 }
 
-                 // var data = new StringContent(json, Encoding.UTF8, "application/json");
+                LogView.PrintActionLog("File Saved Successfully: " + SelectedDropdown);
+                // var data = new StringContent(json, Encoding.UTF8, "application/json");
 
 
-                 /* var url = "http://localhost:8080/ExcelHandler/HandleSaveFile";
+                /* var url = "http://localhost:8080/ExcelHandler/HandleSaveFile";
 
-                  HttpResponseMessage response = await client.PostAsync(url, data);
+                 HttpResponseMessage response = await client.PostAsync(url, data);
 
-                  string result = response.Content.ReadAsStringAsync().Result;
-                  MessageBox.Show(result);*/
+                 string result = response.Content.ReadAsStringAsync().Result;
+                 MessageBox.Show(result);*/
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Saving Excel Data Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -489,6 +509,7 @@ namespace EWApp
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Selecting File from Dropdown " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -499,21 +520,18 @@ namespace EWApp
         private void btn_Import_Click(object sender, EventArgs e)
         {
             try
-            {
-
-            
-            //MessageBox.Show("Importing File : " + SelectedDropdown);
-
-            //string filePath = "C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\"+ SelectedDropdown +"\\"+ SelectedDropdown+".xlsx";
-           // string xmlfilePath = "C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\" + SelectedDropdown + "\\" + SelectedDropdown + "_setting.xml";
-
-
-            ReadExcelAPI();
-            this.Close();
+            { 
+                //MessageBox.Show("Importing File : " + SelectedDropdown);
+                //string filePath = "C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\"+ SelectedDropdown +"\\"+ SelectedDropdown+".xlsx";
+                // string xmlfilePath = "C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\" + SelectedDropdown + "\\" + SelectedDropdown + "_setting.xml";
+                ReadExcelAPI();
+                LogView.PrintActionLog("Importing File: "+SelectedDropdown);
+                this.Close();
                 //ReadExcel(filePath,xmlfilePath,false);
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Clicked On Import Button Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }

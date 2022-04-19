@@ -44,7 +44,8 @@ namespace EWApp
 
         private void btn_Setting_Click_1(object sender, RibbonControlEventArgs e)
         {
-            SettingsForm s_form = new SettingsForm();
+          //  SettingsForm s_form = new SettingsForm();
+            NewSettingForm s_form = new NewSettingForm();
             s_form.ShowDialog(); 
             
         }

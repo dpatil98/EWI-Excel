@@ -18,6 +18,7 @@ namespace EWApp
         public List<string> colNames = new List<string>();
         XElement xelement;
         form_LoadFile ErrorLog = new form_LoadFile();
+        LogViewControl LogView = ThisWorkbook.logView;
 
         public SettingsForm()
         {
@@ -71,10 +72,12 @@ namespace EWApp
             {
                 form_LoadFile loadform = new form_LoadFile();
                 loadform.LoadXML();
-            }
+                LogView.PrintActionLog("Setting Saved Successfully: " + Selectedfile);
+                }
             
             }catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Updating XML Data Form:Setting , Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -99,9 +102,11 @@ namespace EWApp
            
             xelement.Save("C:\\CSharp\\EWApp\\EWApp\\bin\\AllFiles\\" + Selectedfile + "\\" + Selectedfile + "_setting.xml");*/
             this.Visible = false;
-
-            }catch (Exception ex)
+            LogView.PrintActionLog("File Saved Successfully: " + Selectedfile);
+            }
+            catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Clicked On Save button Form:Setting , Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
             }
@@ -139,6 +144,7 @@ namespace EWApp
             }
             catch (Exception ex)
             {
+                LogView.PrintErrorLog(ex.Message);
                 ErrorLog.ErrorLogging(String.Format("{0} @ {1}", DateTime.Now, $"Client-Side : Reading XML Data,  Form:Setting , Error: " + ex.Message));
                 MessageBox.Show(ex.Message);
                 this.Close();

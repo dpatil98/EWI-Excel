@@ -11,6 +11,9 @@ namespace EWApp
 {
     public partial class ThisWorkbook
     {
+        //creating static object of LogViewControl so it can be accessed from form1.cs
+        //to write a log
+         public static LogViewControl logView = new LogViewControl();
         private void ThisWorkbook_Startup(object sender, System.EventArgs e)
         {
             try
@@ -44,6 +47,17 @@ namespace EWApp
                 }
 
                 // throw new Exception("No network adapters with an IPv4 address in the system!");
+
+                
+                //LogViewControl logView = new LogViewControl();
+                logView.AutoSize = true;
+               //logView.TopLevel = false;        
+                Globals.ThisWorkbook.ActionsPane.Controls.Add(logView);
+               //logView.Anchor=(AnchorStyles.Bottom | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Left);
+                logView.Dock = DockStyle.Fill;
+               
+                Globals.ThisWorkbook.Application.DisplayDocumentActionTaskPane = true;
+
             }
             catch (Exception ex)
             {
